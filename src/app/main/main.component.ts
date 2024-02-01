@@ -9,6 +9,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon'; 
 import { MatInput, MatInputModule } from '@angular/material/input'; 
 import { MatMenu, MatMenuModule } from '@angular/material/menu'; 
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar'; 
 import { MatTable, MatTableModule } from '@angular/material/table';
 import { MatToolbarModule } from '@angular/material/toolbar'; 
 import { db, Kick, KickSession } from '../../db';
@@ -16,6 +17,7 @@ import { liveQuery } from 'dexie';
 import download from 'downloadjs';
 import { exportDB } from 'dexie-export-import';
 import { FileUploadDialog } from './file-upload-dialog';
+import { ErrorDialog } from './error-dialog';
 
 export type Mode = 'Kick' | 'Show';
 export interface JoinedSession {
@@ -36,6 +38,7 @@ export interface JoinedSession {
     MatInputModule,
     MatIconModule,
     MatMenuModule,
+    MatSnackBarModule,
     MatTableModule,
     MatToolbarModule,
     MatCommonModule,
@@ -75,7 +78,9 @@ export class MainComponent implements OnInit {
     }
   }
 
-  constructor(public dialog: MatDialog) {
+  constructor(public dialog: MatDialog,
+             private snackBar: MatSnackBar,
+  ) {
     
   }
 
@@ -98,7 +103,8 @@ export class MainComponent implements OnInit {
         this.ready = true;
         this.updateSessionCache();
       },
-      error(err) {
+      error: (err) => {
+        this.error("Getting session failed..", err);
         console.error(err);
       }
     });
@@ -139,9 +145,10 @@ export class MainComponent implements OnInit {
       this.isKicking = false;
       this.id = 0;
       this.updateSessionCache()
+      this.snackAttack('Saved new session');
     }).catch((err) => {
+      this.error("Saving kicks failed", err);
       console.error(err);
-      console.log("Please try again.");
     });
   }
 
@@ -185,6 +192,7 @@ export class MainComponent implements OnInit {
             }
             this.filteredKicks = [...this.allKicksBySessionId];
           }).catch((err) => {
+            this.error("Updating kick cache failed", err);
             console.error(err);
           })
         }
@@ -222,16 +230,24 @@ export class MainComponent implements OnInit {
   }
 
   async backup() {
-    const blob = await exportDB(db);
-    download(blob, 'kicks.backup.json', "application/json");
+    try {
+      const blob = await exportDB(db);
+      download(blob, 'kicks.backup.json', "application/json");
+    } catch(err) {
+      this.error("Exporting failed", err);
+    }
   }
 
   async unbackup(file?: Blob) {
     if(file) {
-      await db.delete();
-      await db.open();
-      await db.import(file);
-      console.log('import complete');
+      try {
+        await db.delete();
+        await db.open();
+        await db.import(file);
+        this.snackAttack('Import complete');
+      } catch(err) {
+        this.error("Importing failed", err);
+      }
     }
   }
 
@@ -245,4 +261,18 @@ export class MainComponent implements OnInit {
     });
   }
 
+  snackAttack(message: string) {
+    this.snackBar.open(message, 'OK', {
+      duration: 3000
+    });
+  }
+
+  error(error: string, err: any) {
+    console.log(error, err);
+    const dialogRef = this.dialog.open(ErrorDialog);
+    if (dialogRef.componentRef?.instance) {
+      dialogRef.componentRef.instance.error = error;
+      dialogRef.componentRef.instance.jsonError = err;
+    }
+  }
 }
