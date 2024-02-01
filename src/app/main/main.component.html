@@ -1,0 +1,123 @@
+<div role="main" >
+    <mat-toolbar color="primary" class="mb-3 toolbar">
+        <button mat-button [matMenuTriggerFor]="menu" class="col-1">
+            <mat-icon>menu</mat-icon>
+        </button>
+        <span class="title">Kick</span>
+        <button mat-button [matMenuTriggerFor]="settings" class="float-right">
+            <mat-icon>settings</mat-icon>
+        </button>
+    </mat-toolbar>
+
+    <mat-menu #menu>
+        <menu mat-menu-item (click)="menuSelect('Kick')">
+            <mat-icon>play_for_work</mat-icon>
+            Kicking Time
+        </menu>
+        <menu mat-menu-item (click)="menuSelect('Show')">
+            <mat-icon>history</mat-icon>
+            Show Previous Kicks
+        </menu>
+    </mat-menu>
+
+    <mat-menu #settings>
+        <menu mat-menu-item (click)="backup()">
+            <mat-icon>download</mat-icon>
+            Download backup
+        </menu>
+        <menu mat-menu-item (click)="upload()">
+            <mat-icon>cloud_upload</mat-icon>
+            Overwrite with backup
+        </menu>
+    </mat-menu>
+
+    <div class="pl-3 pt-1 m-1">
+        <div class="kickMode" *ngIf="mode === 'Kick'">
+            <div class="buttons">
+                <button mat-raised-button
+                    color="warn"
+                    [disabled]="isDoneDisabled()"
+                    (click)="done()"
+                >
+                    <mat-icon>stop</mat-icon>
+                    Done
+                </button>
+                <span class="p-1"></span>
+                <button mat-raised-button
+                    color="accent"
+                    (click)="kick()"
+                >
+                    <mat-icon>exposure_plus_1</mat-icon>
+                    Kick
+                </button>
+            </div>
+            <table #kickAdderTable mat-table [dataSource]="kicks" class="mat-elevation-z8 mt-3 p-1" *ngIf="isKicking">
+                <ng-container matColumnDef="count">
+                    <th mat-header-cell *matHeaderCellDef> Number </th>
+                    <td mat-cell *matCellDef="let element"> {{element.count}} </td>
+                </ng-container>
+                <ng-container matColumnDef="date">
+                    <th mat-header-cell *matHeaderCellDef> Date </th>
+                    <td mat-cell *matCellDef="let element"> {{element.date.toLocaleString()}} </td>
+                </ng-container>
+            
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="showMode pl-3 m-1" *ngIf="mode === 'Show'">
+        <div *ngIf="sessions?.length === 0">
+            No kick sessions exist yet, please add one.
+        </div>
+
+        <div *ngIf="sessions.length > 0">
+            <mat-form-field class="example-form-field">
+                <mat-label>Filter</mat-label>
+                <!--
+                <input matInput type="text" [(ngModel)]="value">
+                <button matSuffix mat-icon-button aria-label="Clear" (click)="value=''">
+                    <mat-icon>close</mat-icon>
+                </button>
+                -->
+                <input matInput type="text" placeholder="feb 1" (input)="applyFilter()">
+                <button matSuffix mat-icon-button aria-label="Clear" (click)="clearTextFilter()">
+                    <mat-icon>close</mat-icon>
+                </button>
+            </mat-form-field>
+
+            <!-- <button mat-button (click)="accordion.openAll()">Expand All</button> -->
+            <div class="mb-2">
+                <button mat-button (click)="accordion.closeAll()">Collapse All</button>
+            </div>
+
+            <mat-accordion class="accoridion" multi>
+                <mat-expansion-panel hideToggle *ngFor="let session of sessions; index as i;">
+                    <mat-expansion-panel-header *ngIf="getJoinedSessionById(session.id!)">
+                        <mat-panel-title>
+                            Session {{ i }}
+                        </mat-panel-title>
+                        <mat-panel-description>
+                            Total kicks: {{ getJoinedSessionById(session.id!) }}
+                        </mat-panel-description>
+                    </mat-expansion-panel-header>
+
+                    <table mat-table [dataSource]="allKicksBySessionId[i].kicks" class="mat-elevation-z8 mt-3 p-1" *ngIf="getJoinedSessionById(session.id!)">
+                        <ng-container matColumnDef="count">
+                            <th mat-header-cell *matHeaderCellDef> Number </th>
+                            <td mat-cell *matCellDef="let element"> {{element.count}} </td>
+                        </ng-container>
+                        <ng-container matColumnDef="date">
+                            <th mat-header-cell *matHeaderCellDef> Date </th>
+                            <td mat-cell *matCellDef="let element"> {{element.date.toLocaleString()}} </td>
+                        </ng-container>
+                    
+                        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+                    </table>
+                </mat-expansion-panel>
+            </mat-accordion>
+        </div>
+    </div>
+</div>

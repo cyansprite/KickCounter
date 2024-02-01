@@ -1,0 +1,16 @@
+<h2 mat-dialog-title>Upload</h2>
+
+<mat-dialog-content class="mat-typography">
+  <p>
+    Upload your backup.
+  </p>
+  <p>
+    This will overwrite your data.
+  </p>
+  <input type="file" class="file-input" (change)="setFile($event)" #fileUpload>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button [mat-dialog-close]="undefined">Cancel</button>
+  <button mat-button [mat-dialog-close]="this.file" cdkFocusInitial>Upload</button>
+</mat-dialog-actions>
