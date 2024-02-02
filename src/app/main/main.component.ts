@@ -1,17 +1,17 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
-import { MatAccordion, MatExpansionModule } from '@angular/material/expansion'; 
-import { MatButtonModule } from '@angular/material/button'; 
-import { MatCardModule } from '@angular/material/card'; 
+import { Component, Input, OnInit, ViewChild, OnDestroy } from '@angular/core';
+import { MatAccordion, MatExpansionModule } from '@angular/material/expansion';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { MatCommonModule } from '@angular/material/core';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog'; 
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon'; 
-import { MatInput, MatInputModule } from '@angular/material/input'; 
-import { MatMenu, MatMenuModule } from '@angular/material/menu'; 
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar'; 
+import { MatIconModule } from '@angular/material/icon';
+import { MatInput, MatInputModule } from '@angular/material/input';
+import { MatMenu, MatMenuModule } from '@angular/material/menu';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTable, MatTableModule } from '@angular/material/table';
-import { MatToolbarModule } from '@angular/material/toolbar'; 
+import { MatToolbarModule } from '@angular/material/toolbar';
 import { db, Kick, KickSession } from '../../db';
 import { liveQuery } from 'dexie';
 import download from 'downloadjs';
@@ -49,7 +49,7 @@ export interface JoinedSession {
   templateUrl: './main.component.html',
   styleUrl: './main.component.css'
 })
-export class MainComponent implements OnInit {
+export class MainComponent implements OnInit, OnDestroy {
   filterTextInput: MatInput;
   @ViewChild(MatInput) set _input(input: MatInput) {
     if(input) {
@@ -81,7 +81,7 @@ export class MainComponent implements OnInit {
   constructor(public dialog: MatDialog,
              private snackBar: MatSnackBar,
   ) {
-    
+
   }
 
   sessions$ = liveQuery(() => db.kicksSession.toArray());
@@ -95,6 +95,7 @@ export class MainComponent implements OnInit {
   displayedColumns: string[] = ['count', 'date',];
   id = 0;
   currentSessionId: number;
+  subs = [];
 
   async ngOnInit(): Promise<void> {
     this.sessions$.subscribe({
@@ -107,6 +108,34 @@ export class MainComponent implements OnInit {
         this.error("Getting session failed..", err);
         console.error(err);
       }
+    });
+
+    addEventListener("unload", (event) => {
+      console.log('unload');
+      this.done();
+    });
+
+    addEventListener("blur", (event) => {
+      console.log('blur');
+      this.done();
+    });
+
+    addEventListener("beforeunload", (event) => {
+      console.log('beforeunload');
+      this.done();
+    });
+  }
+
+  ngOnDestroy(): void {
+    removeEventListener("unload", (event) => {
+      // no-op
+    });
+    removeEventListener("blur", (event) => {
+      // no-op
+    });
+
+    removeEventListener("beforeunload", (event) => {
+      // no-op
     });
   }
 
@@ -140,16 +169,18 @@ export class MainComponent implements OnInit {
   }
 
   done() {
-    this.updateKicksDB().then(() => {
-      this.kicks = [];
-      this.isKicking = false;
-      this.id = 0;
-      this.updateSessionCache()
-      this.snackAttack('Saved new session');
-    }).catch((err) => {
-      this.error("Saving kicks failed", err);
-      console.error(err);
-    });
+    if (this.isKicking) {
+      this.updateKicksDB().then(() => {
+        this.kicks = [];
+        this.isKicking = false;
+        this.id = 0;
+        this.updateSessionCache()
+        this.snackAttack('Saved new session');
+      }).catch((err) => {
+        this.error("Saving kicks failed", err);
+        console.error(err);
+      });
+    }
   }
 
   isDoneDisabled() {
